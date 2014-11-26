@@ -1,13 +1,63 @@
 module DaoDao
   class Hotel
     HOTEL_SEARCH_URL = 'http://www.daodao.com/DaoDaoCheckRatesAjax?action=getSingleHotelMeta'
+    HOTEL_DIRECTORY = 'http://www.daodao.com/dpages/sitemap/hotels'
+
     attr_accessor :id, :name, :url
     attr_reader :rank, :home_page, :rooms
+    @@page_index = nil
+    @@max_index = nil
 
     class << self
       ##
-      # retrieve all hotel at www.daodao.com, one page each time
+      # retrieve all hotel at www.daodao.com, 200 each time
       def all
+        @@page_index = 1 if @@page_index == nil 
+        @@max_index = 9999999 if @@max_index == nil
+
+        if @@page_index > @@max_index
+          return nil
+        end
+
+        page_url = "#{HOTEL_DIRECTORY}"
+        if @@page_index > 1
+          page_url += "-#{@@page_index}"
+        end
+
+        page_url += ".html" 
+        page = HttpRequester.get page_url, nil
+
+        # parse max_index
+        if @@max_index == 9999999
+          reg = /<a href='hotels-\d+.html'>(\d+)<\/a>/
+          match = page.scan reg
+
+          if match && match.length > 0
+            i = 0
+            match.each do |m|
+              i = m[0].to_i if m[0].to_i > i
+            end
+            @@max_index = i
+          end
+        end
+
+        # parse hotel name
+        reg = /<a href="(\/Hotel_Review-[^<>]+)" target="_blank">([^<>]+)<\/a>/
+        match = page.scan reg
+
+        hotels = {}
+        if match && match.length > 0
+          match.each do |m|
+            hotels[m[1]] = hotels[m[0]]
+          end
+        end
+
+        @@page_index += 1
+        hotels
+      end
+
+      def rewind
+        @@page_index = 1
       end
     end
 

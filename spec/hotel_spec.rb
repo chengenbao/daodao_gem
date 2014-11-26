@@ -8,4 +8,15 @@ describe DaoDao::Hotel do
 
     puts city.info
   end
+
+  it 'all hotels' do
+    hotels = {}
+    2.times do |i|
+      DaoDao::Hotel.all.each do |k, v|
+        hotels[k] = v
+      end
+    end
+
+    expect(hotels.length).to eq(600)
+  end
 end
